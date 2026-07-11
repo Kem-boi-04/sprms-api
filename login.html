@@ -1,0 +1,609 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPRMS — Secure Login</title>
+<style>
+  :root {
+    --ink: #16241f;
+    --paper: #f6f8f6;
+    --panel: #ffffff;
+    --line: #d9e2dd;
+    --teal: #0f5c52;
+    --teal-dark: #0a423b;
+    --teal-soft: #e3f0ee;
+    --amber: #b5762a;
+    --error: #b3261e;
+    --error-bg: #fdecea;
+    --radius: 10px;
+    --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+    --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", "Courier New", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    background-image:
+      linear-gradient(180deg, var(--teal-dark) 0%, var(--teal) 100%);
+    background-size: 100% 220px;
+    background-repeat: no-repeat;
+    font-family: var(--font-body);
+    color: var(--ink);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 20px;
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .brand-mark svg { width: 18px; height: 18px; }
+
+  .brand-text {
+    font-family: var(--font-display);
+    font-size: 17px;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
+  }
+
+  .brand-text small {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.65);
+  }
+
+  .lang-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 999px;
+    padding: 3px;
+  }
+
+  .lang-toggle button {
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.75);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .lang-toggle button.active {
+    background: #fff;
+    color: var(--teal-dark);
+  }
+
+  .card {
+    background: var(--panel);
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 2px rgba(15, 30, 25, 0.04), 0 12px 32px -16px rgba(15, 30, 25, 0.18);
+    padding: 36px 32px 30px;
+  }
+
+  .card h1 {
+    font-family: var(--font-display);
+    font-size: 25px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    color: var(--teal-dark);
+  }
+
+  .card .sub {
+    font-size: 13.5px;
+    color: #5a6b64;
+    margin: 0 0 26px;
+    line-height: 1.5;
+  }
+
+  .step-track {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+
+  .step-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--teal-soft);
+    color: var(--teal-dark);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .step-dot.done {
+    background: var(--teal);
+    color: #fff;
+  }
+
+  .step-dot.current {
+    background: var(--teal-dark);
+    color: #fff;
+    box-shadow: 0 0 0 3px var(--teal-soft);
+  }
+
+  .step-line {
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .step-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #5a6b64;
+  }
+
+  fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .field .hint {
+    font-weight: 400;
+    color: #7c8a84;
+    font-size: 11.5px;
+  }
+
+  .field input {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    background: var(--paper);
+    color: var(--ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .field input:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px var(--teal-soft);
+    background: #fff;
+  }
+
+  .field input.code-input {
+    font-family: var(--font-mono);
+    letter-spacing: 0.3em;
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .submit-btn {
+    width: 100%;
+    background: var(--teal-dark);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: background 0.15s ease, transform 0.05s ease;
+  }
+
+  .submit-btn:hover { background: var(--teal); }
+  .submit-btn:active { transform: translateY(1px); }
+  .submit-btn:disabled {
+    background: #b9c4bf;
+    cursor: not-allowed;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: #5a6b64;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 18px;
+  }
+
+  .back-link:hover { color: var(--teal-dark); }
+
+  .totp-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: -8px;
+    margin-bottom: 18px;
+  }
+
+  .totp-meta .user-chip {
+    font-size: 12px;
+    color: #5a6b64;
+  }
+
+  .totp-meta .user-chip strong {
+    color: var(--ink);
+  }
+
+  .timer {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  .timer.low { color: var(--error); }
+
+  .error-box {
+    display: none;
+    background: var(--error-bg);
+    border: 1px solid #f1c4c0;
+    color: var(--error);
+    font-size: 12.5px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    line-height: 1.45;
+  }
+
+  .error-box.show { display: block; }
+
+  .panel {
+    display: none;
+  }
+  .panel.active { display: block; }
+
+  .footnote {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .footnote strong { color: rgba(255,255,255,0.85); }
+
+  [data-i18n] { transition: opacity 0.1s ease; }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L3 6V11C3 16.5 6.8 21.3 12 22.5C17.2 21.3 21 16.5 21 11V6L12 2Z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/>
+            <path d="M9 12L11 14L15.5 9.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          SPRMS
+          <small data-i18n="brand_sub">Patient Record System</small>
+        </div>
+      </div>
+      <div class="lang-toggle">
+        <button type="button" class="active" data-lang="en" onclick="setLang('en')">English</button>
+        <button type="button" data-lang="sw" onclick="setLang('sw')">Kiswahili</button>
+      </div>
+    </div>
+
+    <div class="card">
+
+      <!-- STEP 1: username + password -->
+      <div class="panel active" id="panel-credentials">
+        <h1 data-i18n="login_title">Sign in</h1>
+        <p class="sub" data-i18n="login_sub">Enter your account details to continue. You'll verify with a one-time code next.</p>
+
+        <div class="step-track">
+          <div class="step-dot current">1</div>
+          <div class="step-line"></div>
+          <div class="step-dot">2</div>
+          <span class="step-label" data-i18n="step_label_1">Account &amp; code</span>
+        </div>
+
+        <div class="error-box" id="error-credentials"></div>
+
+        <form id="form-credentials" autocomplete="off">
+          <div class="field">
+            <label data-i18n="label_username">Username</label>
+            <input type="text" id="username" placeholder="dr_jane" required>
+          </div>
+          <div class="field">
+            <label data-i18n="label_password">Password</label>
+            <input type="password" id="password" placeholder="••••••••••" required>
+          </div>
+          <button type="submit" class="submit-btn" data-i18n="btn_continue">Continue</button>
+        </form>
+      </div>
+
+      <!-- STEP 2: TOTP -->
+      <div class="panel" id="panel-totp">
+        <button class="back-link" onclick="goToStep(1)">
+          <span>←</span> <span data-i18n="back_label">Back</span>
+        </button>
+
+        <h1 data-i18n="totp_title">Enter your code</h1>
+        <p class="sub" data-i18n="totp_sub">Open your authenticator app and enter the 6-digit code shown for SPRMS.</p>
+
+        <div class="step-track">
+          <div class="step-dot done">1</div>
+          <div class="step-line"></div>
+          <div class="step-dot current">2</div>
+          <span class="step-label" data-i18n="step_label_2">Verify</span>
+        </div>
+
+        <div class="error-box" id="error-totp"></div>
+
+        <div class="totp-meta">
+          <span class="user-chip" data-i18n="signed_in_as">Signing in as <strong id="totp-username-display"></strong></span>
+          <span class="timer" id="totp-timer">30s</span>
+        </div>
+
+        <form id="form-totp" autocomplete="off">
+          <div class="field">
+            <label>
+              <span data-i18n="label_code">6-digit code</span>
+              <span class="hint" data-i18n="label_code_hint"> — refreshes every 30s</span>
+            </label>
+            <input type="text" id="totp_code" class="code-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="000000" required>
+          </div>
+          <button type="submit" class="submit-btn" id="totp-submit-btn" data-i18n="btn_verify">Verify and sign in</button>
+        </form>
+      </div>
+
+    </div>
+
+    <p class="footnote" data-i18n="footnote">Protected under <strong>HIPAA</strong> and the <strong>Kenya Data Protection Act</strong>.</p>
+  </div>
+
+<script>
+  const API_BASE = "http://127.0.0.1:8000";
+
+  const translations = {
+    en: {
+      brand_sub: "Patient Record System",
+      login_title: "Sign in",
+      login_sub: "Enter your account details to continue. You'll verify with a one-time code next.",
+      step_label_1: "Account & code",
+      label_username: "Username",
+      label_password: "Password",
+      btn_continue: "Continue",
+      back_label: "Back",
+      totp_title: "Enter your code",
+      totp_sub: "Open your authenticator app and enter the 6-digit code shown for SPRMS.",
+      step_label_2: "Verify",
+      signed_in_as: "Signing in as ",
+      label_code: "6-digit code",
+      label_code_hint: " — refreshes every 30s",
+      btn_verify: "Verify and sign in",
+      footnote: "Protected under HIPAA and the Kenya Data Protection Act.",
+      err_credentials_missing: "Enter both a username and password to continue.",
+      err_totp_missing: "Enter the 6-digit code from your authenticator app.",
+      err_login_failed: "That username or password isn't recognized.",
+      err_totp_failed: "That code wasn't accepted. Wait for a fresh code and try again.",
+      err_network: "Couldn't reach the SPRMS server. Check that it's running.",
+      success: "Signed in successfully."
+    },
+    sw: {
+      brand_sub: "Mfumo wa Kumbukumbu za Mgonjwa",
+      login_title: "Ingia",
+      login_sub: "Weka taarifa za akaunti yako ili kuendelea. Utathibitisha kwa nambari ya muda mfupi baadaye.",
+      step_label_1: "Akaunti na nambari",
+      label_username: "Jina la mtumiaji",
+      label_password: "Nywila",
+      btn_continue: "Endelea",
+      back_label: "Rudi",
+      totp_title: "Weka nambari yako",
+      totp_sub: "Fungua programu yako ya uthibitishaji na uweke nambari za tarakimu 6 za SPRMS.",
+      step_label_2: "Thibitisha",
+      signed_in_as: "Unaingia kama ",
+      label_code: "Nambari za tarakimu 6",
+      label_code_hint: " — hubadilika kila sekunde 30",
+      btn_verify: "Thibitisha na uingie",
+      footnote: "Imelindwa chini ya HIPAA na Sheria ya Ulinzi wa Data ya Kenya.",
+      err_credentials_missing: "Weka jina la mtumiaji na nywila ili kuendelea.",
+      err_totp_missing: "Weka nambari za tarakimu 6 kutoka programu yako ya uthibitishaji.",
+      err_login_failed: "Jina la mtumiaji au nywila hailingani.",
+      err_totp_failed: "Nambari hiyo haikukubaliwa. Subiri nambari mpya kisha ujaribu tena.",
+      err_network: "Imeshindwa kufikia seva ya SPRMS. Hakikisha inaendesha.",
+      success: "Umeingia kwa mafanikio."
+    }
+  };
+
+  let currentLang = "en";
+
+  function setLang(lang) {
+    currentLang = lang;
+    document.querySelectorAll(".lang-toggle button").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.lang === lang);
+    });
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      if (translations[lang][key]) el.textContent = translations[lang][key];
+    });
+  }
+
+  function t(key) {
+    return translations[currentLang][key] || key;
+  }
+
+  function showError(panelId, key) {
+    const box = document.getElementById(panelId);
+    box.textContent = t(key);
+    box.classList.add("show");
+  }
+
+  function clearError(panelId) {
+    document.getElementById(panelId).classList.remove("show");
+  }
+
+  function goToStep(step) {
+    document.getElementById("panel-credentials").classList.toggle("active", step === 1);
+    document.getElementById("panel-totp").classList.toggle("active", step === 2);
+  }
+
+  let storedUsername = "";
+  let storedPassword = "";
+
+  document.getElementById("form-credentials").addEventListener("submit", function (e) {
+    e.preventDefault();
+    clearError("error-credentials");
+
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!username || !password) {
+      showError("error-credentials", "err_credentials_missing");
+      return;
+    }
+
+    storedUsername = username;
+    storedPassword = password;
+    document.getElementById("totp-username-display").textContent = username;
+    document.getElementById("totp_code").value = "";
+    clearError("error-totp");
+    goToStep(2);
+    startTotpTimer();
+    document.getElementById("totp_code").focus();
+  });
+
+  document.getElementById("form-totp").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    clearError("error-totp");
+
+    const code = document.getElementById("totp_code").value.trim();
+    if (!code || code.length !== 6) {
+      showError("error-totp", "err_totp_missing");
+      return;
+    }
+
+    const btn = document.getElementById("totp-submit-btn");
+    btn.disabled = true;
+
+    try {
+      const body = new URLSearchParams();
+      body.set("username", storedUsername);
+      body.set("password", storedPassword);
+      body.set("totp_code", code);
+
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401 && data.detail && data.detail.toLowerCase().includes("code")) {
+          showError("error-totp", "err_totp_failed");
+        } else if (res.status === 401) {
+          showError("error-credentials", "err_login_failed");
+          goToStep(1);
+        } else {
+          showError("error-totp", "err_totp_failed");
+        }
+        btn.disabled = false;
+        return;
+      }
+
+      const data = await res.json();
+      sessionStorage.setItem("sprms_token", data.access_token);
+      window.location.href = "consent-dashboard.html";
+      sessionStorage.setItem("sprms_username", storedUsername);
+
+      // Replace with: window.location.href = "dashboard.html";
+      alert(t("success") + "\n\nToken stored for this session.");
+      btn.disabled = false;
+
+    } catch (err) {
+      showError("error-totp", "err_network");
+      btn.disabled = false;
+    }
+  });
+
+  let timerInterval = null;
+  function startTotpTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    const el = document.getElementById("totp-timer");
+
+    function tick() {
+      const secondsLeft = 30 - (Math.floor(Date.now() / 1000) % 30);
+      el.textContent = secondsLeft + "s";
+      el.classList.toggle("low", secondsLeft <= 5);
+    }
+    tick();
+    timerInterval = setInterval(tick, 1000);
+  }
+
+  // auto-advance focus for the 6-digit code field
+  document.getElementById("totp_code").addEventListener("input", function (e) {
+    e.target.value = e.target.value.replace(/[^0-9]/g, "");
+  });
+</script>
+</body>
+</html>
