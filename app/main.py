@@ -32,7 +32,7 @@ app.include_router(auth.router)
 app.include_router(records.router)
 app.include_router(consent.router)
 app.include_router(admin.router)
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 
 @app.get("/health")
