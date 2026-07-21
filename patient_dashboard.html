@@ -440,7 +440,83 @@
 
 <script>
 const I18N = {"en":{"brandSub":"Patient Portal","nav_overview":"Overview","navshort_overview":"Overview","nav_records":"My Medical Records","navshort_records":"Records","nav_consent":"Consent & Privacy","navshort_consent":"Consent","nav_access":"Active Access Grants","navshort_access":"Access","nav_profile":"My Profile","navshort_profile":"Profile","signOut":"Sign out","heroTitle":"Welcome back, Amara","heroDesc":"Here's a snapshot of your records, consent settings, and who currently has access.","statPortalLabel":"Portal reg. no.","statPortalSub":"Your patient identifier","statRecordsLabel":"Medical records on file","statRecordsSub":"Across all encounters","statDoctorsLabel":"Doctors with active access","statDoctorsSub":"Currently authorized","statDeptLabel":"Departments authorized","statDeptSub":"Adjustable anytime","recentEncTitle":"Recent encounters","totalWord":"total","deptAuthTitle":"Department authorization","recordsPageTitle":"My Medical Records","recordsPageDesc":"Encrypted at rest (AES-256) — decrypted here only for your own viewing.","consentPageTitle":"Consent & Privacy","consentPageDesc":"Choose which departments can request access to your records.","toggleRowDesc":"Doctors in this department may request access to your history.","accessPageTitle":"Active Access Grants","accessPageDesc":"Doctors currently authorized to view your records, and when access expires.","profilePageTitle":"My Profile","profilePageDesc":"Update your contact details and profile photo.","patientSinceLine":"Patient since Nov 2025","uploadPhotoBtn":"Upload new photo","resetPhotoBtn":"Reset to default","personalDetailsTitle":"Personal details","fullNameLabel":"Full name","dobLabel":"Date of birth","portalRegLabel":"Portal registration no.","readOnlyHint":"— assigned, read-only","emailLabel":"Email","phoneLabel":"Phone","nationalIdLabel":"National ID","encryptedHint":"— encrypted, read-only","saveChangesBtn":"Save changes","savedToast":"✓ Profile updated","revokeBtn":"Revoke","thDoctor":"Doctor","thDiagnosis":"Diagnosis","thNotes":"Notes","thDate":"Date","thDept":"Department","thExpires":"Expires","footnote":"Protected under <strong>HIPAA</strong> and the <strong>Kenya Data Protection Act</strong>.","dept_outpatient":"Outpatient Care","dept_emergency":"Emergency & Trauma","dept_maternity":"Maternity & Reproductive Health","dept_mental":"Mental Health Services","dept_chronic":"Chronic Disease Management"},"sw":{"brandSub":"Jukwaa la Mgonjwa","nav_overview":"Muhtasari","navshort_overview":"Muhtasari","nav_records":"Rekodi Zangu za Matibabu","navshort_records":"Rekodi","nav_consent":"Idhini na Faragha","navshort_consent":"Idhini","nav_access":"Ruhusa za Ufikiaji","navshort_access":"Ufikiaji","nav_profile":"Wasifu Wangu","navshort_profile":"Wasifu","signOut":"Toka","heroTitle":"Karibu tena, Amara","heroDesc":"Huu ni muhtasari wa rekodi zako, mipangilio ya idhini, na wale wenye ufikiaji kwa sasa.","statPortalLabel":"Namba ya Usajili","statPortalSub":"Kitambulisho chako cha mgonjwa","statRecordsLabel":"Rekodi za matibabu zilizohifadhiwa","statRecordsSub":"Katika matukio yote","statDoctorsLabel":"Madaktari wenye ufikiaji","statDoctorsSub":"Walioidhinishwa kwa sasa","statDeptLabel":"Idara zilizoidhinishwa","statDeptSub":"Zinaweza kubadilishwa wakati wowote","recentEncTitle":"Matukio ya Hivi Karibuni","totalWord":"jumla","deptAuthTitle":"Idhini kwa Idara","recordsPageTitle":"Rekodi Zangu za Matibabu","recordsPageDesc":"Zimesimbwa kwa usalama (AES-256) — zinafumbuliwa hapa kwa ajili yako pekee.","consentPageTitle":"Idhini na Faragha","consentPageDesc":"Chagua idara zipi zinaweza kuomba ufikiaji wa rekodi zako.","toggleRowDesc":"Madaktari wa idara hii wanaweza kuomba ufikiaji wa historia yako.","accessPageTitle":"Ruhusa za Ufikiaji Zinazotumika","accessPageDesc":"Madaktari walioidhinishwa kuona rekodi zako kwa sasa, na muda ambao ufikiaji utaisha.","profilePageTitle":"Wasifu Wangu","profilePageDesc":"Sasisha maelezo yako ya mawasiliano na picha ya wasifu.","patientSinceLine":"Mgonjwa tangu Novemba 2025","uploadPhotoBtn":"Pakia Picha Mpya","resetPhotoBtn":"Rejesha Chaguo-msingi","personalDetailsTitle":"Maelezo Binafsi","fullNameLabel":"Jina Kamili","dobLabel":"Tarehe ya Kuzaliwa","portalRegLabel":"Namba ya Usajili","readOnlyHint":"— imepangwa, haiwezi kubadilishwa","emailLabel":"Barua Pepe","phoneLabel":"Simu","nationalIdLabel":"Kitambulisho cha Taifa","encryptedHint":"— imesimbwa, haiwezi kubadilishwa","saveChangesBtn":"Hifadhi Mabadiliko","savedToast":"✓ Wasifu Umesasishwa","revokeBtn":"Batilisha","thDoctor":"Daktari","thDiagnosis":"Utambuzi","thNotes":"Maelezo","thDate":"Tarehe","thDept":"Idara","thExpires":"Muda wa Mwisho","footnote":"Imelindwa chini ya <strong>HIPAA</strong> na <strong>Sheria ya Ulinzi wa Data ya Kenya</strong>.","dept_outpatient":"Huduma za Wagonjwa wa Nje","dept_emergency":"Dharura na Majeraha","dept_maternity":"Uzazi na Afya ya Uzazi","dept_mental":"Huduma za Afya ya Akili","dept_chronic":"Usimamizi wa Magonjwa Sugu"}};
-let currentLang = 'en';
+const API_BASE = "http://127.0.0.1:8000";
+const TOKEN = sessionStorage.getItem("sprms_token");
+
+if (!TOKEN) {
+  document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif;"><h2>Not logged in</h2><p><a href="login.html">Go to login page</a></p></div>';
+}
+
+async function loadMyRecords() {
+  try {
+    const res = await fetch(`${API_BASE}/records/mine`, {
+      headers: { "Authorization": "Bearer " + TOKEN }
+    });
+    const data = await res.json();
+    const records = data.records || [];
+    const tbody = document.querySelector('#page-records tbody');
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    if (records.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#7c8a84;">No medical records yet.</td></tr>';
+      return;
+    }
+    records.forEach((r, i) => {
+      const date = new Date(r.timestamp).toLocaleString();
+      const row = document.createElement('tr');
+      row.style.animationDelay = (i * 60) + 'ms';
+      row.innerHTML = `
+        <td><strong>${r.provider_id ? r.provider_id.slice(0,8) : 'Unknown'}</strong></td>
+        <td class="mono">${r.icd10_code || '—'}</td>
+        <td>${r.icd10_code || 'Encounter'}</td>
+        <td style="max-width:260px; color:#5a6b64;">${r.clinical_notes}</td>
+        <td>${date}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (e) {
+    console.error("Failed to load records:", e);
+  }
+}
+
+async function loadMyGrants() {
+  try {
+    const res = await fetch(`${API_BASE}/consent/my-grants`, {
+      headers: { "Authorization": "Bearer " + TOKEN }
+    });
+    const data = await res.json();
+    const grants = data.grants || [];
+    const tbody = document.getElementById('grantsBody');
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    if (grants.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:#7c8a84;">No active access grants.</td></tr>';
+      return;
+    }
+    grants.forEach((g, i) => {
+      const expiry = new Date(g.expiry_timestamp).toISOString().split('T')[0];
+      const row = document.createElement('tr');
+      row.style.animationDelay = (i * 60) + 'ms';
+      row.innerHTML = `
+        <td style="display:flex; align-items:center; gap:8px;">
+          <img src="https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(g.doctor_name)}&backgroundColor=0d0d0d,0a7a3d&backgroundType=gradientLinear&textColor=ffffff" style="width:26px;height:26px;border-radius:50%;" alt="">
+          <strong>${g.doctor_name}</strong>
+        </td>
+        <td>${g.permitted_department}</td>
+        <td><span class="badge ok">${expiry}</span></td>
+        <td style="text-align:right;"><button class="btn danger sm" disabled title="Revoke not yet implemented">Revoke</button></td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (e) {
+    console.error("Failed to load grants:", e);
+  }
+}
+
+if (TOKEN) {
+  loadMyRecords();
+  loadMyGrants();
+}let currentLang = 'en';
 let revealed = new Set();
 
 function setLang(lang) {

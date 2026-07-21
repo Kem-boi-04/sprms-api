@@ -578,7 +578,7 @@
       });
       const meData = await meRes.json();
       if (meData.role === "patient") {
-  window.location.href = "consent-dashboard.html";
+  window.location.href = "patient_dashboard.html";
 } else if (meData.role === "clinician") {
   window.location.href = "doctor_dashboard.html";
 } else if (meData.role === "admin") {

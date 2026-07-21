@@ -23,7 +23,6 @@ class ConsentUpdate(BaseModel):
     allowed: bool
 
 async def _ensure_is_patient(db: AsyncConnection):
-    """Raises 403 if the currently authenticated user is not a patient."""
     async with db.cursor() as cur:
         await cur.execute(
             "SELECT role FROM staff_accounts WHERE user_id = current_setting('app.current_user_id')::uuid"
@@ -31,6 +30,7 @@ async def _ensure_is_patient(db: AsyncConnection):
         row = await cur.fetchone()
     if row is None or row["role"] != "patient":
         raise HTTPException(status_code=403, detail="Only patients can access consent settings")
+
 @router.get("/my-settings")
 async def get_my_consent(db: AsyncConnection = Depends(get_authenticated_db)):
     await _ensure_is_patient(db)
@@ -95,3 +95,27 @@ async def get_my_patients(db: AsyncConnection = Depends(get_authenticated_db)):
         )
         rows = await cur.fetchall()
     return {"count": len(rows), "patients": rows}
+
+@router.get("/my-grants")
+async def get_my_grants(db: AsyncConnection = Depends(get_authenticated_db)):
+    """
+    Returns clinicians who currently have active (non-expired) access
+    to the logged-in patient's records, via consent_ledger.
+    """
+    async with db.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT
+                cl.policy_id,
+                sa.full_name AS doctor_name,
+                cl.permitted_department,
+                cl.expiry_timestamp
+            FROM consent_ledger cl
+            JOIN staff_accounts sa ON sa.user_id = cl.accessor_id
+            WHERE cl.patient_id = current_setting('app.current_user_id')::uuid
+              AND cl.expiry_timestamp > NOW()
+            ORDER BY cl.expiry_timestamp ASC
+            """
+        )
+        rows = await cur.fetchall()
+    return {"count": len(rows), "grants": rows}
