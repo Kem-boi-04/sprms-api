@@ -12,11 +12,11 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ---- EDIT THESE THREE VALUES FOR YOUR TEST ACCOUNT ----
-USERNAME = "patient_john"
-PLAIN_PASSWORD = "PatientPass123!"
-FULL_NAME = "John Koech"
-DEPARTMENT = "General Outpatient"
-ROLE = "patient"
+USERNAME = "admin_sam"
+PLAIN_PASSWORD = "AdminPass123!"
+FULL_NAME = "Samuel Kariuki"
+DEPARTMENT = "System Administration"
+ROLE = "admin"
 # --------------------------------------------------------
 
 user_id = str(uuid.uuid4())

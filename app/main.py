@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import lifespan
-from app.routers import auth, records, consent
+from app.routers import auth, records, consent, admin
 
 
 app = FastAPI(
@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(records.router)
 app.include_router(consent.router)
+app.include_router(admin.router)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 

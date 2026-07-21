@@ -4,12 +4,10 @@ Login endpoint - wired to the real staff_accounts table.
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from psycopg import AsyncConnection
-
-from app.core.auth import create_access_token, verify_password, verify_totp
+from app.core.auth import create_access_token, verify_password, verify_totp, get_authenticated_db
 from app.core.database import get_db_connection
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
 
 @router.post("/login")
 async def login(
@@ -24,18 +22,24 @@ async def login(
             (form_data.username,),
         )
         user = await cur.fetchone()
-
     if user is None or not verify_password(form_data.password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
         )
-
     if not totp_code or not verify_totp(user["totp_secret"], totp_code):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing authentication code",
         )
-
     token = create_access_token(user_id=str(user["user_id"]))
     return {"access_token": token, "token_type": "bearer"}
+
+@router.get("/me")
+async def get_my_role(db: AsyncConnection = Depends(get_authenticated_db)):
+    async with db.cursor() as cur:
+        await cur.execute(
+            "SELECT role FROM staff_accounts WHERE user_id = current_setting('app.current_user_id')::uuid"
+        )
+        row = await cur.fetchone()
+    return {"role": row["role"] if row else None}

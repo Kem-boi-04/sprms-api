@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from psycopg import AsyncConnection
 from pydantic import BaseModel
 from app.core.auth import get_authenticated_db
+from app.core.config import settings
 
 router = APIRouter(prefix="/consent", tags=["consent"])
 
@@ -68,3 +69,29 @@ async def update_consent(
         """, (update.department, update.allowed))
     await db.commit()
     return {"department": update.department, "allowed": update.allowed}
+
+@router.get("/my-patients")
+async def get_my_patients(db: AsyncConnection = Depends(get_authenticated_db)):
+    """
+    Returns patients who have granted the currently logged-in clinician
+    active (non-expired) access, via consent_ledger.
+    """
+    async with db.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT
+                p.patient_id,
+                pgp_sym_decrypt(p.full_name_enc, %s) AS full_name,
+                pgp_sym_decrypt(p.national_id_enc, %s) AS national_id,
+                cl.permitted_department,
+                cl.expiry_timestamp
+            FROM consent_ledger cl
+            JOIN patients p ON p.patient_id = cl.patient_id
+            WHERE cl.accessor_id = current_setting('app.current_user_id')::uuid
+              AND cl.expiry_timestamp > NOW()
+            ORDER BY cl.expiry_timestamp ASC
+            """,
+            (settings.pgcrypto_key, settings.pgcrypto_key),
+        )
+        rows = await cur.fetchall()
+    return {"count": len(rows), "patients": rows}

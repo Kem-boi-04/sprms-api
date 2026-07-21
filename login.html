@@ -573,7 +573,19 @@
 
       const data = await res.json();
       sessionStorage.setItem("sprms_token", data.access_token);
-      window.location.href = "consent-dashboard.html";
+      const meRes = await fetch("http://127.0.0.1:8000/auth/me", {
+        headers: { "Authorization": "Bearer " + data.access_token }
+      });
+      const meData = await meRes.json();
+      if (meData.role === "patient") {
+  window.location.href = "consent-dashboard.html";
+} else if (meData.role === "clinician") {
+  window.location.href = "doctor_dashboard.html";
+} else if (meData.role === "admin") {
+  window.location.href = "admin_dashboard.html";
+} else {
+  window.location.href = "consent-dashboard.html";
+}
       sessionStorage.setItem("sprms_username", storedUsername);
 
       // Replace with: window.location.href = "dashboard.html";

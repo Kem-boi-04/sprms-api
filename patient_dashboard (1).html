@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>SPRMS — Patient Dashboard</title>
+<style>
+
+  :root {
+    --ink: #161616; --paper: #f7f7f6; --panel: #ffffff; --line: #e3e1df;
+    --teal: #0a7a3d; --teal-dark: #0d0d0d; --teal-soft: #e3f3e8;
+    --green: #1f8a44; --green-pale: #e8f6ec;
+    --amber: #b5762a; --amber-bg: #fbf1e4;
+    --error: #CE1126; --error-bg: #fbe4e6;
+    --flag-black: #0d0d0d; --flag-red: #CE1126; --flag-green: #0a7a3d;
+    --radius: 12px;
+    --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+    --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { min-height: 100vh; background: var(--paper); font-family: var(--font-body); color: var(--ink); font-size: 14px; -webkit-tap-highlight-color: transparent; }
+  button { font-family: inherit; }
+  img { max-width: 100%; display: block; }
+  ::selection { background: var(--teal-soft); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; } }
+
+  /* ---------- topbar ---------- */
+  .topbar { background: linear-gradient(120deg, var(--teal-dark) 0%, var(--teal) 100%); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; position: sticky; top: 0; z-index: 60; box-shadow: 0 2px 16px rgba(10,66,59,.2); }
+  .flag-stripe { position: sticky; top: 60px; z-index: 59; display: flex; height: 5px; width: 100%; }
+  .flag-stripe span { display: block; }
+  .flag-stripe span:nth-child(1) { flex: 2.2; background: var(--flag-black); }
+  .flag-stripe span:nth-child(2) { flex: 0.6; background: #fff; }
+  .flag-stripe span:nth-child(3) { flex: 2.2; background: var(--flag-red); }
+  .flag-stripe span:nth-child(4) { flex: 0.6; background: #fff; }
+  .flag-stripe span:nth-child(5) { flex: 2.2; background: var(--flag-green); }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark { width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .brand-mark svg { width: 18px; height: 18px; }
+  .brand-text { font-family: var(--font-display); font-size: 17px; line-height: 1.15; }
+  .brand-text small { display: block; font-family: var(--font-body); font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: rgba(255,255,255,.65); }
+  .role-pill { display: none; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .lang-toggle { display: flex; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 3px; }
+  .lang-toggle button { border: none; background: transparent; color: rgba(255,255,255,.75); font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s; }
+  .lang-toggle button.active { background: #fff; color: var(--teal-dark); }
+  .user-chip { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.28); padding: 4px 12px 4px 4px; border-radius: 999px; font-size: 12.5px; cursor: pointer; transition: background .15s; }
+  .user-chip:hover { background: rgba(255,255,255,.18); }
+  .user-chip .avatar-wrap { width: 26px; height: 26px; border-radius: 50%; overflow: hidden; background: #fff; flex-shrink: 0; border: 1px solid rgba(255,255,255,.5); }
+  .user-chip .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .signout-btn { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3); color: #fff; padding: 7px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .signout-btn:hover { background: rgba(255,255,255,.22); }
+  .hamburger { display: none; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); width: 34px; height: 34px; border-radius: 8px; color: #fff; cursor: pointer; align-items: center; justify-content: center; }
+
+  /* ---------- layout ---------- */
+  .shell { display: flex; min-height: calc(100vh - 65px); }
+  .sidebar { width: 226px; flex-shrink: 0; background: #fff; border-right: 1px solid var(--line); padding: 18px 12px; position: sticky; top: 65px; height: calc(100vh - 65px); overflow-y: auto; transition: transform .25s ease; }
+  .sidebar .eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7c8a84; padding: 0 10px; margin: 4px 0 10px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px; border-radius: 9px; border: none; background: transparent; color: var(--ink); font-size: 13.5px; font-weight: 500; cursor: pointer; margin-bottom: 2px; transition: background .12s, transform .12s; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .65; }
+  .nav-item:hover { background: var(--paper); }
+  .nav-item.active { background: var(--teal-soft); color: var(--teal-dark); font-weight: 700; }
+  .nav-item.active svg { opacity: 1; }
+  .sidebar-footer { margin-top: 14px; padding: 12px 10px; border-top: 1px solid var(--line); }
+  .sidebar-footer .mini-avatar-row { display: flex; align-items: center; gap: 9px; }
+  .sidebar-footer .avatar-wrap { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; border: 1px solid var(--line); flex-shrink: 0; }
+  .sidebar-footer .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .sidebar-footer strong { display: block; font-size: 12.5px; }
+  .sidebar-footer span { font-size: 11px; color: #7c8a84; }
+
+  .main { flex: 1; padding: 24px 30px 70px; max-width: 1180px; }
+  .page { display: none; }
+  .page.active { display: block; animation: fadein .3s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .page-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .page-head h1 { font-family: var(--font-display); font-size: 25px; margin: 0 0 3px; color: var(--teal-dark); }
+  .page-head p { margin: 0; color: #5a6b64; font-size: 13px; }
+
+  /* ---------- hero banner (animated, per-role) ---------- */
+  .hero { position: relative; border-radius: 16px; overflow: hidden; padding: 22px 24px; margin-bottom: 20px; background: linear-gradient(120deg, var(--teal-dark), var(--teal) 60%, var(--green)); color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .hero-text h2 { font-family: var(--font-display); font-size: 22px; margin: 0 0 6px; }
+  .hero-text p { margin: 0; font-size: 13px; color: rgba(255,255,255,.82); max-width: 46ch; }
+  .hero-art { width: 150px; height: 64px; flex-shrink: 0; opacity: .95; }
+  .hero::after { content: ""; position: absolute; width: 240px; height: 240px; border-radius: 50%; background: rgba(255,255,255,.06); top: -120px; right: -60px; }
+  .pulse-line { stroke: #fff; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 340; stroke-dashoffset: 340; animation: draw 2.6s ease-in-out infinite; }
+  @keyframes draw { 0% { stroke-dashoffset: 340; } 55% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -340; } }
+  .pulse-dot { animation: pulse 1.8s ease-in-out infinite; transform-origin: center; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: .5; } }
+
+  /* ---------- grid / cards ---------- */
+  .grid { display: grid; gap: 15px; }
+  .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.cols-2 { grid-template-columns: 1.3fr 1fr; }
+  @media (max-width: 980px) { .grid.cols-4, .grid.cols-3 { grid-template-columns: 1fr 1fr; } .grid.cols-2 { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .grid.cols-4, .grid.cols-3 { grid-template-columns: 1fr 1fr; } }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 17px 19px; box-shadow: 0 1px 2px rgba(15,30,25,.03); transition: box-shadow .18s, transform .18s; opacity: 0; animation: cardin .45s ease forwards; }
+  .card:hover { box-shadow: 0 8px 24px -12px rgba(15,30,25,.18); transform: translateY(-1px); }
+  @keyframes cardin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #7c8a84; margin: 0 0 9px; font-weight: 700; }
+
+  .stat-card .stat-num { font-family: var(--font-display); font-size: 30px; color: var(--teal-dark); line-height: 1; margin-bottom: 4px; }
+  .stat-card .stat-sub { font-size: 12px; color: #5a6b64; }
+  .stat-card .stat-sub.up { color: var(--green); }
+  .stat-card .stat-sub.warn { color: var(--amber); }
+
+  .section-card { padding: 19px 20px 21px; margin-bottom: 16px; }
+  .section-card .head-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+  .section-card .head-row h2 { font-family: var(--font-display); font-size: 17px; margin: 0; color: var(--teal-dark); }
+  .section-card .head-row .count { font-size: 12px; color: #7c8a84; }
+
+  /* ---------- tables ---------- */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+  thead th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #7c8a84; font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  tbody td { padding: 11px 10px; border-bottom: 1px solid #eef2f0; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { opacity: 0; animation: rowin .35s ease forwards; }
+  @keyframes rowin { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+  tbody tr:hover { background: #fafcfb; }
+  .mono { font-family: var(--font-mono); font-size: 12px; }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; letter-spacing: .02em; white-space: nowrap; }
+  .badge.ok { background: var(--green-pale); color: var(--green); }
+  .badge.warn { background: var(--amber-bg); color: var(--amber); }
+  .badge.err { background: var(--error-bg); color: var(--error); }
+  .badge.neutral { background: var(--teal-soft); color: var(--teal-dark); }
+  .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.live::before { animation: pulse 1.6s ease-in-out infinite; }
+
+  .btn { border: 1px solid var(--line); background: #fff; color: var(--ink); padding: 8px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .12s; min-height: 36px; }
+  .btn:hover { border-color: var(--teal); color: var(--teal-dark); }
+  .btn.primary { background: var(--teal-dark); color: #fff; border-color: var(--teal-dark); }
+  .btn.primary:hover { background: var(--teal); }
+  .btn.danger { color: var(--error); border-color: #f0c9c5; }
+  .btn.danger:hover { background: var(--error-bg); }
+  .btn.sm { padding: 5px 11px; font-size: 11.5px; min-height: 30px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn:active { transform: translateY(1px); }
+
+  .enc-field { display: inline-flex; align-items: center; gap: 7px; }
+  .enc-field .val { font-family: var(--font-mono); }
+  .enc-field .val.masked { color: #9aa8a2; letter-spacing: 1px; }
+  .enc-toggle { border: none; background: var(--teal-soft); color: var(--teal-dark); width: 24px; height: 24px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .enc-toggle svg { width: 12px; height: 12px; }
+  .enc-toggle:hover { background: var(--teal); color: #fff; }
+
+  /* ---------- forms ---------- */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+  .field .hint { font-weight: 400; color: #7c8a84; font-size: 11px; }
+  .field select, .field input, .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-family: var(--font-body); font-size: 14px; background: var(--paper); color: var(--ink); }
+  .field select:focus, .field input:focus, .field textarea:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); background: #fff; }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .field-row { grid-template-columns: 1fr; } }
+  .field input:disabled { color: #8a9993; background: #f0f3f1; }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-bottom: 1px solid #eef2f0; gap: 12px; }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-row .label-block strong { display: block; font-size: 13.5px; }
+  .toggle-row .label-block span { font-size: 12px; color: #7c8a84; }
+  .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider { position: absolute; inset: 0; background: #d5ddd9; border-radius: 999px; cursor: pointer; transition: background .15s; }
+  .switch .slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .switch input:checked + .slider { background: var(--green); }
+  .switch input:checked + .slider::before { transform: translateX(18px); }
+
+  /* ---------- profile page ---------- */
+  .profile-hero { display: flex; align-items: center; gap: 20px; padding: 22px; margin-bottom: 18px; flex-wrap: wrap; }
+  .avatar-edit { position: relative; width: 92px; height: 92px; flex-shrink: 0; }
+  .avatar-edit .avatar-img-wrap { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; border: 3px solid var(--teal-soft); background: var(--teal-soft); transition: transform .2s; }
+  .avatar-edit .avatar-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-edit:hover .avatar-img-wrap { transform: scale(1.03); }
+  .avatar-edit .cam-btn { position: absolute; bottom: 0; right: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--teal-dark); border: 2px solid #fff; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s; }
+  .avatar-edit .cam-btn:hover { background: var(--teal); }
+  .avatar-edit .cam-btn svg { width: 14px; height: 14px; }
+  .avatar-meta h2 { font-family: var(--font-display); font-size: 20px; margin: 0 0 4px; color: var(--teal-dark); }
+  .avatar-meta p { margin: 0 0 8px; color: #5a6b64; font-size: 12.5px; }
+  .avatar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .saved-toast { display: none; align-items: center; gap: 6px; color: var(--green); font-size: 12.5px; font-weight: 700; margin-left: 8px; }
+  .saved-toast.show { display: inline-flex; animation: fadein .3s ease; }
+
+  .chain { position: relative; padding-left: 6px; }
+  .chain-item { position: relative; display: flex; gap: 14px; padding: 13px 0 20px 22px; border-left: 2px solid var(--line); }
+  .chain-item:last-child { border-left: 2px solid transparent; padding-bottom: 2px; }
+  .chain-item::before { content: ""; position: absolute; left: -7px; top: 15px; width: 12px; height: 12px; border-radius: 50%; background: var(--teal-soft); border: 2px solid var(--teal); box-shadow: 0 0 0 4px #fff; }
+  .chain-item .chain-body { flex: 1; min-width: 0; }
+  .chain-item .chain-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
+  .chain-item .action-name { font-weight: 700; font-size: 13px; }
+  .chain-item .time { font-size: 11px; color: #7c8a84; margin-left: auto; white-space: nowrap; }
+  .chain-item .meta { font-size: 12px; color: #5a6b64; }
+  .chain-item .hash-row { margin-top: 7px; font-family: var(--font-mono); font-size: 10.5px; color: #9aa8a2; display: flex; align-items: center; gap: 6px; background: #fafcfb; border: 1px dashed var(--line); padding: 5px 9px; border-radius: 6px; width: fit-content; }
+  .hash-link { color: var(--teal); }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12.5px; }
+  .bar-row .bar-label { width: 130px; flex-shrink: 0; color: #5a6b64; }
+  .bar-track { flex: 1; height: 8px; background: var(--paper); border-radius: 999px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--green)); border-radius: 999px; width: 0; transition: width 1s cubic-bezier(.2,.8,.2,1); }
+  .bar-row .bar-val { width: 32px; text-align: right; font-weight: 700; color: var(--teal-dark); }
+
+  .empty-state { text-align: center; padding: 36px 20px; color: #7c8a84; }
+  .empty-state svg { width: 38px; height: 38px; margin-bottom: 8px; opacity: .5; }
+
+  .footnote { text-align: center; font-size: 11px; color: #7c8a84; margin-top: 26px; }
+  .footnote strong { color: #5a6b64; }
+
+  /* ---------- mobile bottom nav ---------- */
+  .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--line); z-index: 70; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 16px rgba(15,30,25,.06); }
+  .bottom-nav-row { display: flex; justify-content: space-around; }
+  .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; color: #7c8a84; font-size: 10px; font-weight: 600; padding: 6px 4px; border-radius: 8px; flex: 1; cursor: pointer; }
+  .bottom-nav-item svg { width: 19px; height: 19px; }
+  .bottom-nav-item.active { color: var(--teal-dark); }
+  .bottom-nav-item.active svg { transform: translateY(-1px); }
+
+  .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(10,30,25,.35); z-index: 55; }
+  .sidebar-backdrop.show { display: block; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #d5ddd9; border-radius: 999px; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 760px) {
+    .topbar { padding: 10px 14px; }
+    .brand-text { font-size: 15px; }
+    .brand-text small { display: none; }
+    .hamburger { display: none; }
+    .user-chip span.uname { display: none; }
+    .lang-toggle button { padding: 5px 9px; font-size: 10.5px; }
+    .sidebar { position: fixed; left: 0; top: 0; bottom: 0; height: 100vh; z-index: 65; transform: translateX(-100%); box-shadow: 12px 0 30px rgba(0,0,0,.12); }
+    .sidebar.open { transform: translateX(0); }
+    .main { padding: 16px 14px 90px; }
+    .bottom-nav { display: block; }
+    .hero { flex-direction: column; align-items: flex-start; padding: 18px; }
+    .hero-art { width: 120px; }
+    .page-head h1 { font-size: 21px; }
+    .profile-hero { padding: 18px; }
+  }
+  @media (min-width: 761px) { .menu-toggle { display: none !important; } }
+
+</style>
+</head>
+<body>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<div class="topbar">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <button class="hamburger" style="display:flex;" onclick="toggleSidebar()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L3 6V11C3 16.5 6.8 21.3 12 22.5C17.2 21.3 21 16.5 21 11V6L12 2Z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M9 12L11 14L15.5 9.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">SPRMS <small data-i18n="brandSub">Patient Portal</small></div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="lang-toggle">
+      <button class="active" data-lang="en" onclick="setLang('en')">EN</button>
+      <button data-lang="sw" onclick="setLang('sw')">SW</button>
+    </div>
+    <div class="user-chip" onclick="setPage('profile', document.querySelector('.nav-item[data-page=profile]'))" title="View profile">
+      <div class="avatar-wrap"><img id="topbarAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Amara%20Wanjiru&backgroundColor=e3f3e8,e8f6ec&backgroundType=gradientLinear" alt="Profile photo"></div>
+      <span class="uname">Amara Wanjiru</span>
+    </div>
+    <button class="signout-btn" data-i18n="signOut">Sign out</button>
+  </div>
+</div>
+
+<div class="flag-stripe"><span></span><span></span><span></span><span></span><span></span></div>
+
+<div class="shell">
+  <div class="sidebar" id="sidebar">
+    <div class="eyebrow" data-i18n="brandSub">Patient Portal</div>
+    <button class="nav-item active" data-page="overview" onclick="setPage('overview', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span data-i18n="nav_overview">Overview</span></button>
+      <button class="nav-item " data-page="records" onclick="setPage('records', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9.5 12h5M9.5 15.5h5M9.5 8.5h2"/></svg><span data-i18n="nav_records">My Medical Records</span></button>
+      <button class="nav-item " data-page="consent" onclick="setPage('consent', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg><span data-i18n="nav_consent">Consent & Privacy</span></button>
+      <button class="nav-item " data-page="access" onclick="setPage('access', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="10" width="16" height="10" rx="1.8"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><span data-i18n="nav_access">Active Access Grants</span></button>
+      <button class="nav-item " data-page="profile" onclick="setPage('profile', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg><span data-i18n="nav_profile">My Profile</span></button>
+    <div class="sidebar-footer">
+      <div class="mini-avatar-row">
+        <div class="avatar-wrap"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Amara%20Wanjiru&backgroundColor=e3f3e8,e8f6ec&backgroundType=gradientLinear" alt="Profile photo"></div>
+        <div><strong>Amara Wanjiru</strong><span>PT/4092/26</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main" id="main">
+
+  <div class="page" id="page-overview">
+    <div class="hero">
+      <div class="hero-text"><h2 data-i18n="heroTitle">Welcome back, Amara</h2><p data-i18n="heroDesc">Here's a snapshot of your records, consent settings, and who currently has access.</p></div>
+      <svg class="hero-art" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <polyline class="pulse-line" points="0,40 30,40 42,15 54,65 66,25 78,40 100,40 112,20 124,55 136,40 200,40"/>
+  <circle class="pulse-dot" cx="136" cy="40" r="4" fill="#fff"/>
+</svg>
+    </div>
+    <div class="grid cols-4" style="margin-bottom:16px;">
+      <div class="card stat-card"><h3 data-i18n="statPortalLabel">Portal reg. no.</h3><div class="stat-num" >PT/4092/26</div><div class="stat-sub neutral" data-i18n="statPortalSub">Your patient identifier</div></div>
+      <div class="card stat-card"><h3 data-i18n="statRecordsLabel">Medical records on file</h3><div class="stat-num" data-target="2">0</div><div class="stat-sub up" data-i18n="statRecordsSub">Across all encounters</div></div>
+      <div class="card stat-card"><h3 data-i18n="statDoctorsLabel">Doctors with active access</h3><div class="stat-num" data-target="2">0</div><div class="stat-sub up" data-i18n="statDoctorsSub">Currently authorized</div></div>
+      <div class="card stat-card"><h3 data-i18n="statDeptLabel">Departments authorized</h3><div class="stat-num" >3 / 5</div><div class="stat-sub neutral" data-i18n="statDeptSub">Adjustable anytime</div></div>
+    </div>
+    <div class="grid cols-2">
+      <div class="card section-card">
+        <div class="head-row"><h2 data-i18n="recentEncTitle">Recent encounters</h2><span class="count">2 <span data-i18n="totalWord">total</span></span></div>
+        <div class="table-scroll"><table>
+    <thead><tr><th data-i18n="thDoctor">Doctor</th><th>ICD-10</th><th data-i18n="thDiagnosis">Diagnosis</th><th data-i18n="thNotes">Notes</th><th data-i18n="thDate">Date</th></tr></thead>
+    <tbody>
+      <tr style="animation-delay:0ms"><td><strong>Dr. Jane Mwangi</strong></td><td class="mono">J06.9</td><td>Acute upper respiratory infection</td><td style="max-width:260px; color:#5a6b64;">Prescribed rest, fluids, and a 5-day course of amoxicillin. Follow-up if symptoms persist beyond a week.</td><td>2026-07-08 09:14</td></tr><tr style="animation-delay:60ms"><td><strong>Dr. Kiplangat Rono</strong></td><td class="mono">M54.5</td><td>Low back pain</td><td style="max-width:260px; color:#5a6b64;">Recommended physiotherapy, 2x weekly for 3 weeks. No red-flag signs on exam.</td><td>2026-06-21 14:02</td></tr>
+    </tbody>
+  </table></div>
+      </div>
+      <div class="card section-card">
+        <div class="head-row"><h2 data-i18n="deptAuthTitle">Department authorization</h2></div>
+        <div class="bar-row"><span class="bar-label" data-i18n="dept_outpatient">Outpatient Care</span><div class="bar-track"><div class="bar-fill" data-width="100"></div></div><span class="bar-val">100%</span></div><div class="bar-row"><span class="bar-label" data-i18n="dept_emergency">Emergency & Trauma</span><div class="bar-track"><div class="bar-fill" data-width="100"></div></div><span class="bar-val">100%</span></div><div class="bar-row"><span class="bar-label" data-i18n="dept_maternity">Maternity & Reproductive Health</span><div class="bar-track"><div class="bar-fill" data-width="10"></div></div><span class="bar-val">10%</span></div><div class="bar-row"><span class="bar-label" data-i18n="dept_mental">Mental Health Services</span><div class="bar-track"><div class="bar-fill" data-width="10"></div></div><span class="bar-val">10%</span></div><div class="bar-row"><span class="bar-label" data-i18n="dept_chronic">Chronic Disease Management</span><div class="bar-track"><div class="bar-fill" data-width="100"></div></div><span class="bar-val">100%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-records">
+    <div class="page-head"><div><h1 data-i18n="recordsPageTitle">My Medical Records</h1><p data-i18n="recordsPageDesc">Encrypted at rest (AES-256) — decrypted here only for your own viewing.</p></div></div>
+    <div class="card section-card"><div class="table-scroll"><table>
+    <thead><tr><th data-i18n="thDoctor">Doctor</th><th>ICD-10</th><th data-i18n="thDiagnosis">Diagnosis</th><th data-i18n="thNotes">Notes</th><th data-i18n="thDate">Date</th></tr></thead>
+    <tbody>
+      <tr style="animation-delay:0ms"><td><strong>Dr. Jane Mwangi</strong></td><td class="mono">J06.9</td><td>Acute upper respiratory infection</td><td style="max-width:260px; color:#5a6b64;">Prescribed rest, fluids, and a 5-day course of amoxicillin. Follow-up if symptoms persist beyond a week.</td><td>2026-07-08 09:14</td></tr><tr style="animation-delay:60ms"><td><strong>Dr. Kiplangat Rono</strong></td><td class="mono">M54.5</td><td>Low back pain</td><td style="max-width:260px; color:#5a6b64;">Recommended physiotherapy, 2x weekly for 3 weeks. No red-flag signs on exam.</td><td>2026-06-21 14:02</td></tr>
+    </tbody>
+  </table></div></div>
+  </div>
+
+  <div class="page" id="page-consent">
+    <div class="page-head"><div><h1 data-i18n="consentPageTitle">Consent &amp; Privacy</h1><p data-i18n="consentPageDesc">Choose which departments can request access to your records.</p></div></div>
+    <div class="card section-card">
+      
+        <div class="toggle-row">
+          <div class="label-block"><strong data-i18n="dept_outpatient">Outpatient Care</strong><span data-i18n="toggleRowDesc">Doctors in this department may request access to your history.</span></div>
+          <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div class="label-block"><strong data-i18n="dept_emergency">Emergency & Trauma</strong><span data-i18n="toggleRowDesc">Doctors in this department may request access to your history.</span></div>
+          <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div class="label-block"><strong data-i18n="dept_maternity">Maternity & Reproductive Health</strong><span data-i18n="toggleRowDesc">Doctors in this department may request access to your history.</span></div>
+          <label class="switch"><input type="checkbox" ><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div class="label-block"><strong data-i18n="dept_mental">Mental Health Services</strong><span data-i18n="toggleRowDesc">Doctors in this department may request access to your history.</span></div>
+          <label class="switch"><input type="checkbox" ><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div class="label-block"><strong data-i18n="dept_chronic">Chronic Disease Management</strong><span data-i18n="toggleRowDesc">Doctors in this department may request access to your history.</span></div>
+          <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+        </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-access">
+    <div class="page-head"><div><h1 data-i18n="accessPageTitle">Active Access Grants</h1><p data-i18n="accessPageDesc">Doctors currently authorized to view your records, and when access expires.</p></div></div>
+    <div class="card section-card">
+      <div class="table-scroll"><table>
+        <thead><tr><th data-i18n="thDoctor">Doctor</th><th data-i18n="thDept">Department</th><th data-i18n="thExpires">Expires</th><th></th></tr></thead>
+        <tbody id="grantsBody">
+          
+            <tr style="animation-delay:0ms">
+              <td style="display:flex; align-items:center; gap:8px;"><img src="https://api.dicebear.com/7.x/initials/svg?seed=Dr.%20Jane%20Mwangi&backgroundColor=0d0d0d,0a7a3d&backgroundType=gradientLinear&textColor=ffffff" style="width:26px;height:26px;border-radius:50%;" alt=""><strong>Dr. Jane Mwangi</strong></td>
+              <td data-i18n="dept_outpatient">Outpatient Care</td>
+              <td><span class="badge ok">2026-08-15</span></td>
+              <td style="text-align:right;"><button class="btn danger sm" data-i18n="revokeBtn" onclick="this.closest('tr').style.opacity=0; setTimeout(()=>this.closest('tr').remove(), 200)">Revoke</button></td>
+            </tr>
+            <tr style="animation-delay:60ms">
+              <td style="display:flex; align-items:center; gap:8px;"><img src="https://api.dicebear.com/7.x/initials/svg?seed=Dr.%20Kiplangat%20Rono&backgroundColor=0d0d0d,0a7a3d&backgroundType=gradientLinear&textColor=ffffff" style="width:26px;height:26px;border-radius:50%;" alt=""><strong>Dr. Kiplangat Rono</strong></td>
+              <td data-i18n="dept_chronic">Chronic Disease Management</td>
+              <td><span class="badge ok">2026-07-20</span></td>
+              <td style="text-align:right;"><button class="btn danger sm" data-i18n="revokeBtn" onclick="this.closest('tr').style.opacity=0; setTimeout(()=>this.closest('tr').remove(), 200)">Revoke</button></td>
+            </tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-profile">
+    <div class="page-head"><div><h1 data-i18n="profilePageTitle">My Profile</h1><p data-i18n="profilePageDesc">Update your contact details and profile photo.</p></div></div>
+    <div class="card profile-hero">
+      <div class="avatar-edit">
+        <div class="avatar-img-wrap"><img id="profileAvatarBig" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Amara%20Wanjiru&backgroundColor=e3f3e8,e8f6ec&backgroundType=gradientLinear" alt="Profile photo"></div>
+        <label class="cam-btn" for="avatarUpload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.3"/></svg></label>
+        <input type="file" id="avatarUpload" accept="image/*" style="display:none;">
+      </div>
+      <div class="avatar-meta">
+        <h2>Amara Wanjiru</h2>
+        <p>PT/4092/26 · <span data-i18n="patientSinceLine">Patient since Nov 2025</span></p>
+        <div class="avatar-actions">
+          <label class="btn sm" for="avatarUpload" data-i18n="uploadPhotoBtn">Upload new photo</label>
+          <button class="btn sm" data-i18n="resetPhotoBtn" onclick="document.getElementById('profileAvatarBig').src='https://api.dicebear.com/7.x/avataaars/svg?seed=Amara%20Wanjiru&backgroundColor=e3f3e8,e8f6ec&backgroundType=gradientLinear'; document.querySelectorAll('#topbarAvatar').forEach(i=>i.src='https://api.dicebear.com/7.x/avataaars/svg?seed=Amara%20Wanjiru&backgroundColor=e3f3e8,e8f6ec&backgroundType=gradientLinear')">Reset to default</button>
+        </div>
+      </div>
+    </div>
+    <div class="card section-card" style="max-width:640px;">
+      <div class="head-row"><h2 data-i18n="personalDetailsTitle">Personal details</h2></div>
+      <form onsubmit="return saveProfile(event, 'patientSaved')">
+        <div class="field"><label data-i18n="fullNameLabel">Full name</label><input data-role="display-name" value="Amara Wanjiru"></div>
+        <div class="field-row">
+          <div class="field"><label data-i18n="dobLabel">Date of birth</label><input type="date" value="1994-03-12"></div>
+          <div class="field"><label><span data-i18n="portalRegLabel">Portal registration no.</span> <span class="hint" data-i18n="readOnlyHint">— assigned, read-only</span></label><input value="PT/4092/26" disabled></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label data-i18n="emailLabel">Email</label><input type="email" value="amara.w@example.com"></div>
+          <div class="field"><label data-i18n="phoneLabel">Phone</label><input value="+254 712 345 678"></div>
+        </div>
+        <div class="field"><label><span data-i18n="nationalIdLabel">National ID</span> <span class="hint" data-i18n="encryptedHint">— encrypted, read-only</span></label><span class="enc-field" data-real="23481042">
+    <span class="val masked">••••••••</span>
+    <button class="enc-toggle" onclick="revealToggle(this)" title="Decrypt for viewing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg></button>
+  </span></div>
+        <button class="btn primary" type="submit" data-i18n="saveChangesBtn">Save changes</button>
+        <span class="saved-toast" id="patientSaved" data-i18n="savedToast">✓ Profile updated</span>
+      </form>
+    </div>
+  </div>
+    <p class="footnote" data-i18n-html="footnote">Protected under <strong>HIPAA</strong> and the <strong>Kenya Data Protection Act</strong>.</p>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <div class="bottom-nav-row">
+    <button class="bottom-nav-item active" data-page="overview" onclick="setPage('overview', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span data-i18n="navshort_overview">Overview</span></button>
+        <button class="bottom-nav-item " data-page="records" onclick="setPage('records', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9.5 12h5M9.5 15.5h5M9.5 8.5h2"/></svg><span data-i18n="navshort_records">Records</span></button>
+        <button class="bottom-nav-item " data-page="consent" onclick="setPage('consent', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg><span data-i18n="navshort_consent">Consent</span></button>
+        <button class="bottom-nav-item " data-page="access" onclick="setPage('access', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="10" width="16" height="10" rx="1.8"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><span data-i18n="navshort_access">Access</span></button>
+        <button class="bottom-nav-item " data-page="profile" onclick="setPage('profile', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg><span data-i18n="navshort_profile">Profile</span></button>
+  </div>
+</div>
+
+<script>
+const I18N = {"en":{"brandSub":"Patient Portal","nav_overview":"Overview","navshort_overview":"Overview","nav_records":"My Medical Records","navshort_records":"Records","nav_consent":"Consent & Privacy","navshort_consent":"Consent","nav_access":"Active Access Grants","navshort_access":"Access","nav_profile":"My Profile","navshort_profile":"Profile","signOut":"Sign out","heroTitle":"Welcome back, Amara","heroDesc":"Here's a snapshot of your records, consent settings, and who currently has access.","statPortalLabel":"Portal reg. no.","statPortalSub":"Your patient identifier","statRecordsLabel":"Medical records on file","statRecordsSub":"Across all encounters","statDoctorsLabel":"Doctors with active access","statDoctorsSub":"Currently authorized","statDeptLabel":"Departments authorized","statDeptSub":"Adjustable anytime","recentEncTitle":"Recent encounters","totalWord":"total","deptAuthTitle":"Department authorization","recordsPageTitle":"My Medical Records","recordsPageDesc":"Encrypted at rest (AES-256) — decrypted here only for your own viewing.","consentPageTitle":"Consent & Privacy","consentPageDesc":"Choose which departments can request access to your records.","toggleRowDesc":"Doctors in this department may request access to your history.","accessPageTitle":"Active Access Grants","accessPageDesc":"Doctors currently authorized to view your records, and when access expires.","profilePageTitle":"My Profile","profilePageDesc":"Update your contact details and profile photo.","patientSinceLine":"Patient since Nov 2025","uploadPhotoBtn":"Upload new photo","resetPhotoBtn":"Reset to default","personalDetailsTitle":"Personal details","fullNameLabel":"Full name","dobLabel":"Date of birth","portalRegLabel":"Portal registration no.","readOnlyHint":"— assigned, read-only","emailLabel":"Email","phoneLabel":"Phone","nationalIdLabel":"National ID","encryptedHint":"— encrypted, read-only","saveChangesBtn":"Save changes","savedToast":"✓ Profile updated","revokeBtn":"Revoke","thDoctor":"Doctor","thDiagnosis":"Diagnosis","thNotes":"Notes","thDate":"Date","thDept":"Department","thExpires":"Expires","footnote":"Protected under <strong>HIPAA</strong> and the <strong>Kenya Data Protection Act</strong>.","dept_outpatient":"Outpatient Care","dept_emergency":"Emergency & Trauma","dept_maternity":"Maternity & Reproductive Health","dept_mental":"Mental Health Services","dept_chronic":"Chronic Disease Management"},"sw":{"brandSub":"Jukwaa la Mgonjwa","nav_overview":"Muhtasari","navshort_overview":"Muhtasari","nav_records":"Rekodi Zangu za Matibabu","navshort_records":"Rekodi","nav_consent":"Idhini na Faragha","navshort_consent":"Idhini","nav_access":"Ruhusa za Ufikiaji","navshort_access":"Ufikiaji","nav_profile":"Wasifu Wangu","navshort_profile":"Wasifu","signOut":"Toka","heroTitle":"Karibu tena, Amara","heroDesc":"Huu ni muhtasari wa rekodi zako, mipangilio ya idhini, na wale wenye ufikiaji kwa sasa.","statPortalLabel":"Namba ya Usajili","statPortalSub":"Kitambulisho chako cha mgonjwa","statRecordsLabel":"Rekodi za matibabu zilizohifadhiwa","statRecordsSub":"Katika matukio yote","statDoctorsLabel":"Madaktari wenye ufikiaji","statDoctorsSub":"Walioidhinishwa kwa sasa","statDeptLabel":"Idara zilizoidhinishwa","statDeptSub":"Zinaweza kubadilishwa wakati wowote","recentEncTitle":"Matukio ya Hivi Karibuni","totalWord":"jumla","deptAuthTitle":"Idhini kwa Idara","recordsPageTitle":"Rekodi Zangu za Matibabu","recordsPageDesc":"Zimesimbwa kwa usalama (AES-256) — zinafumbuliwa hapa kwa ajili yako pekee.","consentPageTitle":"Idhini na Faragha","consentPageDesc":"Chagua idara zipi zinaweza kuomba ufikiaji wa rekodi zako.","toggleRowDesc":"Madaktari wa idara hii wanaweza kuomba ufikiaji wa historia yako.","accessPageTitle":"Ruhusa za Ufikiaji Zinazotumika","accessPageDesc":"Madaktari walioidhinishwa kuona rekodi zako kwa sasa, na muda ambao ufikiaji utaisha.","profilePageTitle":"Wasifu Wangu","profilePageDesc":"Sasisha maelezo yako ya mawasiliano na picha ya wasifu.","patientSinceLine":"Mgonjwa tangu Novemba 2025","uploadPhotoBtn":"Pakia Picha Mpya","resetPhotoBtn":"Rejesha Chaguo-msingi","personalDetailsTitle":"Maelezo Binafsi","fullNameLabel":"Jina Kamili","dobLabel":"Tarehe ya Kuzaliwa","portalRegLabel":"Namba ya Usajili","readOnlyHint":"— imepangwa, haiwezi kubadilishwa","emailLabel":"Barua Pepe","phoneLabel":"Simu","nationalIdLabel":"Kitambulisho cha Taifa","encryptedHint":"— imesimbwa, haiwezi kubadilishwa","saveChangesBtn":"Hifadhi Mabadiliko","savedToast":"✓ Wasifu Umesasishwa","revokeBtn":"Batilisha","thDoctor":"Daktari","thDiagnosis":"Utambuzi","thNotes":"Maelezo","thDate":"Tarehe","thDept":"Idara","thExpires":"Muda wa Mwisho","footnote":"Imelindwa chini ya <strong>HIPAA</strong> na <strong>Sheria ya Ulinzi wa Data ya Kenya</strong>.","dept_outpatient":"Huduma za Wagonjwa wa Nje","dept_emergency":"Dharura na Majeraha","dept_maternity":"Uzazi na Afya ya Uzazi","dept_mental":"Huduma za Afya ya Akili","dept_chronic":"Usimamizi wa Magonjwa Sugu"}};
+let currentLang = 'en';
+let revealed = new Set();
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+  const dict = I18N[lang] || {};
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = dict[el.dataset.i18n];
+    if (v !== undefined) el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const v = dict[el.dataset.i18nHtml];
+    if (v !== undefined) el.innerHTML = v;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const v = dict[el.dataset.i18nPlaceholder];
+    if (v !== undefined) el.placeholder = v;
+  });
+  document.documentElement.lang = lang;
+}
+
+function setPage(pageId, el) {
+  document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('page-' + pageId);
+  if (target) target.classList.add('active');
+  animateBars();
+  animateCounters();
+  closeSidebar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarBackdrop').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+function animateCounters() {
+  document.querySelectorAll('.page.active .stat-num[data-target]').forEach(el => {
+    const target = parseFloat(el.dataset.target);
+    if (isNaN(target)) return;
+    let cur = 0;
+    const step = Math.max(target / 24, 0.1);
+    clearInterval(el._t);
+    el._t = setInterval(() => {
+      cur += step;
+      if (cur >= target) { cur = target; clearInterval(el._t); }
+      el.textContent = Number.isInteger(target) ? Math.round(cur) : cur.toFixed(1);
+    }, 20);
+  });
+}
+function animateBars() {
+  document.querySelectorAll('.page.active .bar-fill').forEach(el => {
+    const w = el.dataset.width;
+    el.style.width = '0%';
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.width = w + '%'; }));
+  });
+}
+function revealToggle(btn) {
+  const wrap = btn.closest('.enc-field');
+  const valEl = wrap.querySelector('.val');
+  const isMasked = valEl.classList.contains('masked');
+  valEl.textContent = isMasked ? wrap.dataset.real : '••••••••';
+  valEl.classList.toggle('masked', !isMasked);
+  btn.innerHTML = isMasked ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 10.6a2.8 2.8 0 003.9 3.9M7 7.4C4.4 9 2.5 12 2.5 12S6 19 12 19c1.7 0 3.2-.4 4.5-1.1M17.4 15.4C19.6 13.7 21.5 12 21.5 12s-1.2-2.3-3.4-4.3"/></svg>` : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>`;
+}
+function initAvatarUpload(inputId, imgSelector) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      document.querySelectorAll(imgSelector).forEach(img => { img.src = ev.target.result; });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function showSavedToast(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2400);
+}
+function saveProfile(e, toastId) {
+  e.preventDefault();
+  const nameInput = e.target.querySelector('[data-role="display-name"]');
+  if (nameInput && nameInput.value.trim()) {
+    document.querySelectorAll('.uname, .sidebar-footer strong').forEach(el => { el.textContent = nameInput.value.trim(); });
+  }
+  showSavedToast(toastId);
+  return false;
+}
+
+initAvatarUpload('avatarUpload', '#profileAvatarBig, #topbarAvatar, .sidebar-footer img');
+
+animateCounters();
+animateBars();
+</script>
+</body>
+</html>
